@@ -13,6 +13,13 @@ app.use(express.json());
 app.post("/generate", (req, res) => {
   const data = req.body;
 
+  console.log("CWD:", process.cwd());
+console.log("DIRNAME:", __dirname);
+console.log("Template path:", templatePath);
+console.log("Exists:", fs.existsSync(templatePath));
+if (fs.existsSync(templatePath)) {
+  console.log("Template size:", fs.statSync(templatePath).size);
+}
   const content = fs.readFileSync(templatePath, "binary");
   const zip = new PizZip(content);
   const doc = new Docxtemplater(zip);
