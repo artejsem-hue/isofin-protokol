@@ -12,21 +12,27 @@ const templatePath = path.join(__dirname, "template.docx");
 
 app.post("/generate", (req, res) => {
   try {
-    // 1️⃣ načtení šablony
+    // 1️⃣ kontrola existence šablony
     if (!fs.existsSync(templatePath)) {
       return res.status(500).send("Template not found");
     }
 
+    // 2️⃣ načtení šablony
     const content = fs.readFileSync(templatePath);
     const zip = new PizZip(content);
 
-    // 2️⃣ inicializace docxtemplateru
+    // 3️⃣ inicializace docxtemplateru
+    // 👉 DŮLEŽITÉ: vlastní delimitery [[ ]]
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
-      linebreaks: true
+      linebreaks: true,
+      delimiters: {
+        start: "[[",
+        end: "]]"
+      }
     });
 
-    // 3️⃣ naplnění dat (POZOR: názvy musí sedět s {{PLACEHOLDER}} ve Wordu)
+    // 4️⃣ naplnění dat (musí odpovídat [[PLACEHOLDER]] ve Wordu)
     doc.setData({
       CERT_NUMBER: req.body.cert_number || "",
       REPORT_NUMBER: req.body.report_number || "",
@@ -39,15 +45,15 @@ app.post("/generate", (req, res) => {
       NEXT_INSPECTION_DATE: req.body.next_inspection_date || ""
     });
 
-    // 4️⃣ render dokumentu
+    // 5️⃣ render dokumentu
     doc.render();
 
-    // 5️⃣ vygenerování Word bufferu
+    // 6️⃣ generování Word bufferu
     const buffer = doc.getZip().generate({
       type: "nodebuffer"
     });
 
-    // 6️⃣ správné HTTP hlavičky
+    // 7️⃣ HTTP hlavičky pro Word
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -57,7 +63,7 @@ app.post("/generate", (req, res) => {
       'attachment; filename="protokol.docx"'
     );
 
-    // 7️⃣ odeslání Wordu
+    // 8️⃣ odeslání souboru
     res.send(buffer);
 
   } catch (err) {
